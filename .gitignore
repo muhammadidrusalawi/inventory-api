@@ -39,6 +39,3 @@ Thumbs.db
 .eslintcache
 
 /src/generated/prisma
-prisma/migrations
-prisma/seed.ts
-prisma/schema.prisma
