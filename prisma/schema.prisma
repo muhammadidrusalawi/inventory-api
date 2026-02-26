@@ -13,23 +13,67 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id               String   @id @default(uuid())
-  name             String
-  email            String   @unique
-  password         String
-  verified_at      DateTime?
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+model Role {
+  id              String   @id @default(uuid())
+  key             String   @unique
+  label           String
+  description     String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
 
-  stores Store[]
+  rolePermissions RolePermission[]
+  storeUsers      StoreUser[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id              String   @id @default(uuid())
+  key             String   @unique
+  label           String
+  description     String?
+  group           String
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id             String     @id @default(uuid())
+  store_id       String
+  role_id        String
+  permission_id  String
+  created_at     DateTime   @default(now())
+  updated_at     DateTime   @updatedAt
+
+  store          Store      @relation(fields: [store_id], references: [id])
+  role           Role       @relation(fields: [role_id], references: [id])
+  permission     Permission @relation(fields: [permission_id], references: [id])
+
+  @@unique([store_id, role_id, permission_id])
+  @@index([store_id, role_id])
+  @@map("role_permissions")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  password    String
+  verified_at DateTime?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  storeUsers StoreUser[]
 
   @@map("users")
 }
 
 model Store {
   id          String   @id @default(uuid())
-  owner_id    String?
   plan        String
   name        String
   description String?
@@ -37,8 +81,41 @@ model Store {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  owner User? @relation(fields: [owner_id], references: [id])
+  storeUsers StoreUser[]
+  rolePermissions RolePermission[]
+  categories Category[]
 
   @@map("stores")
-  @@index([owner_id])
+  @@index([plan])
+}
+
+model StoreUser {
+  id        String @id @default(uuid())
+  store_id String
+  user_id  String
+  role_id  String
+
+  store Store @relation(fields: [store_id], references: [id])
+  user  User  @relation(fields: [user_id], references: [id])
+  role  Role  @relation(fields: [role_id], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([store_id, user_id])
+  @@index([role_id])
+  @@map("store_users")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  store_id    String
+  name        String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  store Store @relation(fields: [store_id], references: [id])
+
+  @@map("categories")
+  @@index([store_id])
 }
